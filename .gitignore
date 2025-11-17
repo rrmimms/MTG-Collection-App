@@ -6,3 +6,7 @@ __pycache__/
 .env
 instance/
 .DS_Store
+
+# Image files
+*.jpg
+*.svg

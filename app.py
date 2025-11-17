@@ -44,7 +44,11 @@ def get_collection():
         query = query.filter(Card.name.ilike(f'%{search}%'))
     
     if color_filter:
-        query = query.filter(Card.colors.like(f'%{color_filter}%'))
+        if color_filter == 'C':
+            # Colorless cards have empty or null colors
+            query = query.filter((Card.colors == '') | (Card.colors == None))
+        else:
+            query = query.filter(Card.colors.like(f'%{color_filter}%'))
     
     if rarity_filter:
         query = query.filter(Card.rarity == rarity_filter)
