@@ -40,9 +40,10 @@
             </div>
             
             <div class="filters">
+
                 <select id="sortSelect">
                     <option value="name">Sort by Name</option>
-                    <option value="price_usd" selected>Sort by Price</option>
+                    <option value="price_usd">Sort by Price</option>
                     <option value="cmc">Sort by CMC</option>
                     <option value="rarity">Sort by Rarity</option>
                     <option value="set_name">Sort by Set</option>
@@ -52,6 +53,19 @@
                 <select id="orderSelect">
                     <option value="asc">Ascending</option>
                     <option value="desc" selected>Descending</option>
+                </select>
+
+                <select id="secondarySortSelect" style="display:none;">
+                    <option value="name">Secondary: Name</option>
+                    <option value="price_usd">Secondary: Price</option>
+                    <option value="cmc">Secondary: CMC</option>
+                    <option value="set_name">Secondary: Set</option>
+                    <option value="added_date">Secondary: Date Added</option>
+                </select>
+
+                <select id="secondaryOrderSelect" style="display:none;">
+                    <option value="asc">Secondary Ascending</option>
+                    <option value="desc">Secondary Descending</option>
                 </select>
 
                 <select id="colorFilter">

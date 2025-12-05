@@ -31,6 +31,8 @@ def get_collection():
     # Get query parameters
     sort_by = request.args.get('sort', 'name')
     order = request.args.get('order', 'asc')
+    secondary_sort = request.args.get('secondary_sort', 'name')
+    secondary_order = request.args.get('secondary_order', 'asc')
     search = request.args.get('search', '')
     color_filter = request.args.get('color', '')
     rarity_filter = request.args.get('rarity', '')
@@ -56,26 +58,58 @@ def get_collection():
     if type_filter:
         query = query.filter(Card.type_line.ilike(f'%{type_filter}%'))
     
-    # Apply sorting
+    # Apply sorting (comprehensive for all types)
+    from sqlalchemy import cast, Float, case
+    order_by_clauses = []
+
+    # Handle primary sort
     if sort_by == 'price_usd':
-        # Special handling for price - use foil price if card is foil, otherwise regular price
-        from sqlalchemy import cast, Float, case
-        # CASE: when foil=true and price_usd_foil is not null, use foil price, else use regular price
         price_to_use = case(
             (Card.foil & (Card.price_usd_foil != None), Card.price_usd_foil),
             else_=Card.price_usd
         )
-        price_numeric = cast(price_to_use, Float)
-        if order == 'desc':
-            query = query.order_by(price_numeric.desc().nullslast())
-        else:
-            query = query.order_by(price_numeric.asc().nullslast())
+        primary_column = cast(price_to_use, Float)
+    elif sort_by == 'rarity':
+        primary_column = case(
+            (Card.rarity == 'mythic', 4),
+            (Card.rarity == 'rare', 3),
+            (Card.rarity == 'uncommon', 2),
+            (Card.rarity == 'common', 1),
+            else_=0
+        )
     else:
-        sort_column = getattr(Card, sort_by, Card.name)
-        if order == 'desc':
-            query = query.order_by(sort_column.desc())
-        else:
-            query = query.order_by(sort_column.asc())
+        primary_column = getattr(Card, sort_by, Card.name)
+
+    # Handle secondary sort
+    if secondary_sort == 'price_usd':
+        secondary_price_to_use = case(
+            (Card.foil & (Card.price_usd_foil != None), Card.price_usd_foil),
+            else_=Card.price_usd
+        )
+        secondary_column = cast(secondary_price_to_use, Float)
+    elif secondary_sort == 'rarity':
+        secondary_column = case(
+            (Card.rarity == 'mythic', 4),
+            (Card.rarity == 'rare', 3),
+            (Card.rarity == 'uncommon', 2),
+            (Card.rarity == 'common', 1),
+            else_=0
+        )
+    else:
+        secondary_column = getattr(Card, secondary_sort, Card.name)
+
+    # Build order by clauses
+    if order == 'desc':
+        order_by_clauses.append(primary_column.desc())
+    else:
+        order_by_clauses.append(primary_column.asc())
+
+    if secondary_order == 'desc':
+        order_by_clauses.append(secondary_column.desc())
+    else:
+        order_by_clauses.append(secondary_column.asc())
+
+    query = query.order_by(*order_by_clauses)
     
     cards = query.all()
     

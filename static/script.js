@@ -27,8 +27,13 @@ function setupEventListeners() {
     
     // Search and filter controls
     document.getElementById('searchInput').addEventListener('input', debounce(loadCollection, 500));
-    document.getElementById('sortSelect').addEventListener('change', loadCollection);
+        document.getElementById('sortSelect').addEventListener('change', loadCollection);
+        // Always show secondary sort options
+        document.getElementById('secondarySortSelect').style.display = '';
+        document.getElementById('secondaryOrderSelect').style.display = '';
     document.getElementById('orderSelect').addEventListener('change', loadCollection);
+    document.getElementById('secondarySortSelect').addEventListener('change', loadCollection);
+    document.getElementById('secondaryOrderSelect').addEventListener('change', loadCollection);
     document.getElementById('colorFilter').addEventListener('change', loadCollection);
     document.getElementById('rarityFilter').addEventListener('change', loadCollection);
     document.getElementById('typeFilter').addEventListener('input', debounce(loadCollection, 500));
@@ -58,14 +63,17 @@ function setupEventListeners() {
 
 // Load collection from API
 async function loadCollection() {
+    const sort = document.getElementById('sortSelect').value;
     const params = new URLSearchParams({
         search: document.getElementById('searchInput').value,
-        sort: document.getElementById('sortSelect').value,
+        sort,
         order: document.getElementById('orderSelect').value,
         color: document.getElementById('colorFilter').value,
         rarity: document.getElementById('rarityFilter').value,
         type: document.getElementById('typeFilter').value,
     });
+        params.append('secondary_sort', document.getElementById('secondarySortSelect').value);
+        params.append('secondary_order', document.getElementById('secondaryOrderSelect').value);
     
     showLoading(true);
     

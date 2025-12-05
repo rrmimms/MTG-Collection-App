@@ -1,0 +1,142 @@
+### MTG Collection App Migration & Deployment Guide
+
+This guide outlines the steps to migrate the Flask application and its SQLite database to a Linux-based mini-PC, run it with a production-grade server (Gunicorn), and make it accessible remotely and securely using Tailscale.
+
+---
+
+### Step 1: Prepare the Linux Mini-PC
+
+1.  **Install a Linux Distro:**
+    *   Install a user-friendly server distribution like **Ubuntu Server** on your mini-PC.
+
+2.  **Update System & Install Dependencies:**
+    *   Open a terminal and run the following commands:
+
+    ```bash
+    # Update package lists and upgrade existing packages
+    sudo apt update && sudo apt upgrade -y
+
+    # Install essential software (Python, pip, venv, Git)
+    sudo apt install python3-pip python3-venv git -y
+    ```
+
+---
+
+### Step 2: Deploy Your Application Code
+
+1.  **Clone Your Git Repository:**
+    *   Clone the project code from your Git repository onto the mini-PC.
+
+    ```bash
+    # Replace with your actual repository URL if different
+    git clone https://github.com/rrmimms/MTG-Collection-App.git
+
+    # Navigate into your project directory
+    cd MTG-Collection-App
+    ```
+
+---
+
+### Step 3: Set Up the Python Environment
+
+1.  **Create and Activate a Virtual Environment:**
+    *   Isolate your project's dependencies to avoid conflicts.
+
+    ```bash
+    # Create a virtual environment named 'venv'
+    python3 -m venv venv
+
+    # Activate it (your terminal prompt should change)
+    source venv/bin/activate
+    ```
+
+2.  **Install Dependencies:**
+    *   Install all required Python packages, including Gunicorn for the production server.
+
+    ```bash
+    # Install packages from your requirements file
+    pip install -r requirements.txt
+
+    # Install Gunicorn
+    pip install gunicorn
+    ```
+
+---
+
+### Step 4: Migrate the Database
+
+1.  **Locate Your Current Database:**
+    *   On your current development machine, the database is located at `instance/mtg_collection.db`.
+
+2.  **Transfer the Database File:**
+    *   Use `scp` (Secure Copy) to transfer the database file from your current machine to the mini-PC. You will need the mini-PC's local IP address for this.
+    *   From your **current machine's terminal**, run:
+
+    ```bash
+    # Replace <user> and <mini-pc-ip> with your mini-PC's username and IP address
+    scp instance/mtg_collection.db <user>@<mini-pc-ip>:~/MTG-Collection-App/instance/
+    ```
+    *   This command copies your local database directly into the correct `instance` folder on the mini-PC.
+
+---
+
+### Step 5: Run the Application with Gunicorn
+
+Gunicorn is a robust WSGI server for running Python web applications in production.
+
+1.  **Run Gunicorn:**
+    *   From your project directory (`~/MTG-Collection-App`) on the mini-PC, with the virtual environment still active, run:
+
+    ```bash
+    # Bind to all network interfaces on port 8000 with 3 worker processes
+    gunicorn --workers 3 --bind 0.0.0.0:8000 app:app
+    ```
+    *   **`--workers 3`**: Creates multiple processes to handle requests. A good starting point is `(2 * number_of_cpu_cores) + 1`.
+    *   **`--bind 0.0.0.0:8000`**: Listens for requests on port 8000 from any network interface, which is essential for remote access.
+    *   **`app:app`**: Tells Gunicorn to find the Flask `app` object inside the `app.py` file.
+
+2.  **Test Locally:**
+    *   On the mini-PC, open a browser and go to `http://localhost:8000` to confirm the app is running correctly.
+
+---
+
+### Step 6: Set Up Remote Access with Tailscale
+
+Tailscale creates a secure, private network (a "tailnet") between your devices, making remote access simple and secure. It is free for personal use.
+
+1.  **Install Tailscale on the Mini-PC:**
+    *   Follow the official instructions to install Tailscale.
+
+    ```bash
+    # This command downloads and runs the official installer script
+    curl -fsSL https://tailscale.com/install.sh | sh
+    ```
+
+2.  **Authenticate and Start Tailscale:**
+    *   Run the `up` command. It will provide an authentication URL.
+
+    ```bash
+    sudo tailscale up
+    ```
+    *   Copy the URL, paste it into a browser on any device, and log in with a Google, Microsoft, or GitHub account. Your mini-PC is now part of your private tailnet.
+
+3.  **Install Tailscale on Your Client Device:**
+    *   Install the Tailscale client on the computer or phone you want to access the app from. Log in using the **same account**.
+
+4.  **Find Your Mini-PC's Tailscale IP:**
+    *   On the mini-PC, run this command to find its unique, private IP address:
+
+    ```bash
+    tailscale ip -4
+    ```
+    *   This will show an IP address starting with `100.x.x.x`.
+
+5.  **Access Your Application Remotely:**
+    *   On your client device (laptop, phone), open a web browser and navigate to your mini-PC's Tailscale IP address and the port Gunicorn is using (8000).
+
+    ```
+    http://<your-mini-pc-tailscale-ip>:8000
+    ```
+    *   Example: `http://100.101.102.103:8000`
+
+You can now securely access and manage your MTG collection from anywhere.
