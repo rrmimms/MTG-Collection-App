@@ -43,7 +43,13 @@ def get_collection():
     
     # Apply filters
     if search:
-        query = query.filter(Card.name.ilike(f'%{search}%'))
+        from sqlalchemy import or_
+        search_term = f'%{search}%'
+        query = query.filter(or_(
+            Card.name.ilike(search_term),
+            Card.type_line.ilike(search_term),
+            Card.oracle_text.ilike(search_term)
+        ))
     
     if color_filter:
         if color_filter == 'C':
